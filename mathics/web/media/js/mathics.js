@@ -9,6 +9,8 @@ var lastFocus = null;
 
 var welcome = true;
 
+var Builtins = [];
+
 function getLetterWidth(element) {
   var letter = $E('span', $T('m'));
   letter.setStyle({
@@ -33,6 +35,7 @@ function refreshInputSize(textarea) {
     lineCount += Math.ceil(1.0 * (line.length + 1) * letterWidth / width);
   }
   textarea.rows = lineCount;
+  Selector.findChildElements(textarea.up(), ['.request-hint'])[0].rows = lineCount;
 }
 
 function refreshInputSizes() {
@@ -520,6 +523,72 @@ function onBlur(event) {
     }, 10);
   }
   textarea.li.removeClassName('focused');
+
+  clearPredict(textarea);
+}
+
+function onScroll(event) {
+  Selector.findChildElements(this.up(), ['.request-hint'])[0].scrollTop = this.scrollTop;
+}
+
+function onKeyDown(event) {
+  // console.log(event.keyCode)
+  switch (event.keyCode) {
+    // Left Up Down
+    case 37:
+    case 38:
+    case 40:
+      return clearPredict(this);
+      break;
+    // Right
+    case 39:
+      if (this.selectionStart < this.getText().length)
+        return clearPredict(this);
+      else
+        this.value = Selector.findChildElements(this.up(), ['.request-hint'])[0].getText() || this.value;
+  }
+}
+
+function predictBuiltin(event) {
+  if (this.selectionStart < this.getText().length)
+    return clearPredict(this);
+
+  var text = this.getText(),
+      regex = /[A-Z][A-Za-z]*[0-9A-Za-z]*$/;
+
+  var matchedWords = text.match(regex);
+  if (matchedWords) {
+    var word = matchedWords[0], matchedBuiltin = '';
+
+    Builtins.map(function (builtin) {
+      if (builtin != word && builtin.startsWith(word))
+        if (!matchedBuiltin || builtin.length < matchedBuiltin.length)
+          matchedBuiltin = builtin;
+    });
+
+    if (matchedBuiltin)
+      text = text.replace(regex, matchedBuiltin)
+  }
+
+  var hint = Selector.findChildElements(this.up(), ['.request-hint'])[0];
+  hint.scrollTop = this.scrollTop;
+  hint.value = text;
+}
+
+function clearPredict(textarea) {
+  Selector.findChildElements(textarea.up(), ['.request-hint'])[0].value = '';
+}
+
+function getBuiltins() {
+  new Ajax.Request('/ajax/getbuiltins/', {
+    onSuccess: function (response) {
+      Builtins = response.responseText.evalJSON().filter(function (builtin) {
+        return builtin.length > 8;
+      }).map(function (builtin) {
+        return builtin.substr(7);
+      });
+    }
+  });
 }
 
 function createSortable() {
@@ -534,12 +603,13 @@ function createSortable() {
 var queryIndex = 0;
 
 function createQuery(before, noFocus, updatingAll) {
-  var ul, textarea, moveHandle, deleteHandle, submitButton;
+  var ul, textarea, moveHandle, deleteHandle, submitButton, hint;
   // Items need id in order for Sortable.onUpdate to work.
   var li = $E('li', {'id': 'query_' + queryIndex++, 'class': 'query'},
     ul = $E('ul', {'class': 'query'},
       $E('li', {'class': 'request'},
         textarea = $E('textarea', {'class': 'request', 'spellcheck': 'false'}),
+        hint = $E('textarea', {'class': 'request-hint', 'spellcheck': 'false'}),
         $E('span', {'class': 'submitbutton', 'title': "Evaluate [Shift+Return]"},
           submitButton = $E('span', $T('='))
         )
@@ -563,6 +633,9 @@ function createQuery(before, noFocus, updatingAll) {
   if (!updatingAll)
     refreshInputSize(textarea);
   new Form.Element.Observer(textarea, 0.2, inputChange.bindAsEventListener(textarea));
+  textarea.observe('input', predictBuiltin.bindAsEventListener(textarea));
+  textarea.observe('keydown', onKeyDown.bindAsEventListener(textarea));
+  textarea.observe('scroll', onScroll.bindAsEventListener(textarea));
   textarea.observe('focus', onFocus.bindAsEventListener(textarea));
   textarea.observe('blur', onBlur.bindAsEventListener(textarea));
   li.observe('mousedown', queryMouseDown.bindAsEventListener(li));
@@ -735,6 +808,8 @@ function domLoaded() {
     if (!loadLink())
       createQuery();
   }
+
+  getBuiltins();
 }
 
 $(document).observe('dom:loaded', domLoaded);

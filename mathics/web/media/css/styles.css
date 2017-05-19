@@ -531,9 +531,10 @@ ul.query li.request {
   list-style-image: none;
   margin: 0;
   padding: 0;
+  position: relative;
 }
 
-textarea.request {
+textarea.request, textarea.request-hint {
   width: 99%;
   overflow: hidden;
   border: none;
@@ -542,7 +543,10 @@ textarea.request {
   margin: 0;
   font-family: monospace;
   font-size: 1em;
-  background: white;
+  background: transparent;
+
+  position: relative;
+  z-index: 100;
 
   /* hide the blue border in Safari */
   outline-style: none;
@@ -550,6 +554,14 @@ textarea.request {
 
   /* disable resize grid in Safari */
   resize: none;
+}
+
+textarea.request-hint {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 80;
+  opacity: 0.2;
 }
 
 li.out {

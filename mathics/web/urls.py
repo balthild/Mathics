@@ -17,6 +17,7 @@ urlpatterns = patterns(
     ('^ajax/open/$', 'open'),
     ('^ajax/delete/$', 'delete'),
     ('^ajax/getworksheets/$', 'get_worksheets'),
+    ('^ajax/getbuiltins/$', 'get_builtins'),
     ('^(?P<ajax>(?:ajax/)?)doc/$', 'doc'),
     ('^ajax/doc/search/$', 'doc_search'),
     ('^(?P<ajax>(?:ajax/)?)doc/(?P<part>[\w-]+)/$',

@@ -22,6 +22,8 @@ from django.core.mail import send_mail
 from mathics.core.definitions import Definitions
 from mathics.core.evaluation import Evaluation, Message, Result, Output
 
+from mathics.builtin import builtins
+
 from mathics.web.models import Query, Worksheet
 from mathics.web.forms import LoginForm, SaveForm, DeleteForm
 from mathics.doc import documentation
@@ -341,6 +343,14 @@ def delete(request):
         'result': '',
         'form': '{}'
     })
+
+
+def get_builtins(request):
+    try:
+        return HttpResponse(get_builtins.builtins)
+    except AttributeError:
+        get_builtins.builtins = json.dumps(builtins.keys())
+        return HttpResponse(get_builtins.builtins)
 
 
 def get_worksheets(request):
