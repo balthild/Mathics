@@ -524,7 +524,7 @@ function onBlur(event) {
   }
   textarea.li.removeClassName('focused');
 
-  clearPredict(textarea);
+  clearPrediction(textarea);
 }
 
 function onScroll(event) {
@@ -538,22 +538,28 @@ function onKeyDown(event) {
     case 37:
     case 38:
     case 40:
-      return clearPredict(this);
+      clearPrediction(this);
       break;
+
     // Right
     case 39:
-      if (this.selectionStart < this.getText().length)
-        return clearPredict(this);
-      else
-        this.value = Selector.findChildElements(this.up(), ['.request-hint'])[0].getText() || this.value;
+      if (this.selectionStart < this.value.length)
+        clearPrediction(this);
+      break;
+
+    case 9:
+      event.preventDefault();
+      if (this.selectionStart == this.value.length)
+        applyPrediction(this);
+      break;
   }
 }
 
 function predictBuiltin(event) {
-  if (this.selectionStart < this.getText().length)
-    return clearPredict(this);
+  if (this.selectionStart < this.value.length)
+    return clearPrediction(this);
 
-  var text = this.getText(),
+  var text = this.value,
       regex = /[A-Z][A-Za-z]*[0-9A-Za-z]*$/;
 
   var matchedWords = text.match(regex);
@@ -575,7 +581,13 @@ function predictBuiltin(event) {
   hint.value = text;
 }
 
-function clearPredict(textarea) {
+function applyPrediction(textarea) {
+  var builtin = Selector.findChildElements(textarea.up(), ['.request-hint'])[0].value;
+  if (builtin)
+    textarea.value = builtin;
+}
+
+function clearPrediction(textarea) {
   Selector.findChildElements(textarea.up(), ['.request-hint'])[0].value = '';
 }
 
